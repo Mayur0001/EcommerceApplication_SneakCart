@@ -36,8 +36,15 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         String username = null;
         String jwtToken = null;
 
-        if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
-            jwtToken = requestTokenHeader.substring(7);
+        // Check if the token is provided and handle different formats
+        if (requestTokenHeader != null) {
+            if (requestTokenHeader.startsWith("Bearer ")) {
+                jwtToken = requestTokenHeader.substring(7);
+            } else {
+                // If token does not start with "Bearer ", assume the whole header is the token
+                jwtToken = requestTokenHeader;
+                System.out.println("JWT token does not start with Bearer, assuming the entire token.");
+            }
             try {
                 username = jwtUtil.getUsernameFromToken(jwtToken);
                 CURRENT_USER = username;
@@ -47,9 +54,10 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 System.out.println("JWT Token has expired");
             }
         } else {
-            System.out.println("JWT token does not start with Bearer");
+            System.out.println("JWT token is missing");
         }
 
+        // Validate the token if a username was found
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails = jwtService.loadUserByUsername(username);
@@ -62,7 +70,5 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
-
     }
-
 }
